@@ -515,13 +515,50 @@ budget_options = _build_budget_options()
 st.markdown("#### 🔍 Text based search")
 
 st.markdown("<p style='font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;'>Describe your budget, preferred features, and brands - AI will find the best matches</p>", unsafe_allow_html=True)
+
+# Template example with "Use this template" button
+SEARCH_TEMPLATE = "I have a budget of 5-6 lacs, looking for a car with sunroof, 6 airbags, and automatic transmission. Preferred brands are Hyundai or Kia"
+
+# Initialize session state for search query if not exists
+if "search_query_text" not in st.session_state:
+    st.session_state["search_query_text"] = ""
+
+# Template info box with button
+with st.container():
+    st.markdown("""
+    <div style='background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); 
+                border-left: 4px solid #E91E63; 
+                padding: 12px 16px; 
+                border-radius: 8px; 
+                margin-bottom: 12px;'>
+        <div style='display: flex; align-items: center; margin-bottom: 6px;'>
+            <span style='font-size: 1rem; margin-right: 8px;'>💡</span>
+            <span style='font-weight: 600; color: #333; font-size: 0.9rem;'>Example Template</span>
+        </div>
+        <p style='font-size: 0.85rem; color: #555; margin: 0; font-style: italic;'>
+            "I have a budget of 5-6 lacs, looking for a car with sunroof, 6 airbags, and automatic transmission. Preferred brands are Hyundai or Kia"
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    template_col1, template_col2, template_col3 = st.columns([1, 2, 1])
+    with template_col2:
+        if st.button("📝 Use this template", key="use_template_btn", use_container_width=True):
+            st.session_state["search_query_text"] = SEARCH_TEMPLATE
+            st.rerun()
+
 search_query = st.text_area(
     "Search",
-    placeholder="e.g., I have a budget of 5-6 lacs, looking for a car with sunroof, 6 airbags, and automatic transmission. Preferred brands are Hyundai or Kia",
+    value=st.session_state.get("search_query_text", ""),
+    placeholder="Type your search query here or use the template above...",
     key="feature_search",
     label_visibility="collapsed",
     height=80,
 )
+
+# Update session state when user types
+if search_query != st.session_state.get("search_query_text", ""):
+    st.session_state["search_query_text"] = search_query
 
 
 
