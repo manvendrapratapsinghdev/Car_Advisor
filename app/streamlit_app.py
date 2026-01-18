@@ -515,33 +515,25 @@ budget_options = _build_budget_options()
 # Template for search query
 SEARCH_TEMPLATE = "I have a budget of 5-6 lacs, looking for a car with sunroof, 6 airbags, and automatic transmission. Preferred brands are Hyundai or Kia"
 
-# Initialize session state for search query if not exists
-if "search_query_text" not in st.session_state:
-    st.session_state["search_query_text"] = ""
-
 # Header row with title and small "Use template" button on right
 header_col1, header_col2 = st.columns([4, 1])
 with header_col1:
     st.markdown("#### 🔍 Text based search")
 with header_col2:
-    if st.button("📝 Use search template", key="use_template_btn", help="Click to use example search template"):
-        st.session_state["search_query_text"] = SEARCH_TEMPLATE
-        st.rerun()
+    use_template = st.button("📝 Use search template", key="use_template_btn", help="Click to use example search template")
+
+if use_template:
+    st.session_state["feature_search"] = SEARCH_TEMPLATE
 
 st.markdown("<p style='font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;'>Describe your budget, preferred features, and brands - AI will find the best matches</p>", unsafe_allow_html=True)
 
 search_query = st.text_area(
     "Search",
-    value=st.session_state.get("search_query_text", ""),
     placeholder=f"e.g., {SEARCH_TEMPLATE}",
     key="feature_search",
     label_visibility="collapsed",
     height=80,
 )
-
-# Update session state when user types
-if search_query != st.session_state.get("search_query_text", ""):
-    st.session_state["search_query_text"] = search_query
 
 
 
