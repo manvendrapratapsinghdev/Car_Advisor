@@ -563,8 +563,10 @@ class VariantQueries:
             clauses.append({"body_type": body_type})
             meta_info["filters_applied"].append(f"body_type: {body_type}")
         
+        # Note: seating_capacity in DB is stored as "7.0" format, so we do post-filtering
+        seating_filter = None
         if seating_capacity:
-            clauses.append({"seating_capacity": str(seating_capacity)})
+            seating_filter = str(seating_capacity)
             meta_info["filters_applied"].append(f"seating: {seating_capacity} seater")
         
         # Note: transmission is not stored as metadata, skip for now
@@ -587,22 +589,32 @@ class VariantQueries:
                 if m.get('make', '').strip() in brand_filter
             ]
         
+        # Post-filter by seating capacity (DB stores as "7.0", we search for "7")
+        if seating_filter:
+            metadatas = [
+                m for m in metadatas 
+                if seating_filter in str(m.get('seating_capacity', ''))
+            ]
+        
         # If no results, try relaxing constraints
         if not metadatas:
             meta_info["relaxed"] = True
-            # Relax: remove brand filter, keep price
-            if brand_filter and where:
-                # Rebuild without brand
-                relaxed_clauses = [c for c in clauses if c != {"model": model_filter}]
-                if len(relaxed_clauses) == 1:
-                    relaxed_where = relaxed_clauses[0]
-                elif len(relaxed_clauses) > 1:
-                    relaxed_where = {"$and": relaxed_clauses}
+            # Relax: remove seating and brand filter, keep price
+            result = self.collection.get(where=where, include=["metadatas"]) if where else self.collection.get(include=["metadatas"])
+            metadatas = result.get('metadatas') or []
+            
+            # Re-apply seating filter only if we have price filter results
+            if metadatas and seating_filter:
+                seating_filtered = [
+                    m for m in metadatas 
+                    if seating_filter in str(m.get('seating_capacity', ''))
+                ]
+                if seating_filtered:
+                    metadatas = seating_filtered
                 else:
-                    relaxed_where = None
-                
-                result = self.collection.get(where=relaxed_where, include=["metadatas"]) if relaxed_where else self.collection.get(include=["metadatas"])
-                metadatas = result.get('metadatas') or []
+                    # No seating matches - return all price-filtered results
+                    meta_info["filters_applied"] = [f for f in meta_info["filters_applied"] if "seating" not in f]
+                    meta_info["filters_applied"].append(f"seating: {seating_filter} seater (relaxed - showing all)")
         
         # If still no results
         if not metadatas:
